@@ -1,0 +1,4 @@
+Random scripts I've written.  Currently:
+
+zsnapshot - do btrfs based snapshots of various important directories
+zsnapshot - do ZFS/FUSE based snapshots of various important directories

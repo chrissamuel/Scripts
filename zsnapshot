@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# This script will rsync various directories to ZFS and snapshot them.
+# (c) 2007 Chris Samuel
+
+# This script is licensed under the GPL v3 license or later.
+# http://www.gnu.org/copyleft/gpl.html
+
+# First work out the datestamp to be used for all snapshots.
+
+date=$(date +%Y%m%d-%H%M)
+
+echo Snapshot will be labelled $date
+
+# Now we start ZFS using Upstart.
+
+/sbin/start zfs
+
+sleep 5
+
+if [ \! -f /srv/ZFS/etc/motd ]; then
+	echo "ZFS start failed!"
+	sleep 60
+	stop zfs
+	exit 1
+fi
+
+# Snapshot top level directories we care about.
+
+for i in etc home; do
+
+	echo Processing $i
+
+	# If they don't exist then create them, turn on compression.
+
+	if [ ! -d /srv/ZFS/$i ]; then
+		zfs create ZFS/$i
+		zfs set compression=on ZFS/$i
+		zfs set snapdir=visible ZFS/$i
+	fi
+
+	time rsync --inplace --no-whole-file --delete-excluded --exclude .beagle --exclude .bibble --exclude .googleearth --exclude .thumbnails -a /$i/ /srv/ZFS/$i/
+
+	zfs snapshot ZFS/$i@$date
+
+done
+
+# Snapshot directories under /srv
+
+for i in Subversion; do
+
+	echo Processing $i
+
+	# If they don't exist then create them, turn on compression.
+
+	if [ ! -d /srv/ZFS/$i ]; then
+		zfs create ZFS/$i
+		zfs set compression=on ZFS/$i
+		zfs set snapdir=visible ZFS/$i
+	fi
+
+	time rsync --inplace --no-whole-file --delete-excluded --exclude .beagle --exclude .bibble --exclude .googleearth --exclude .thumbnails -a /srv/$i/ /srv/ZFS/$i/
+
+	zfs snapshot ZFS/$i@$date
+
+done
+
+# Now shutdown ZFS after a quick pause
+
+sync
+sleep 1
+/sbin/stop zfs
+
+# All done!
