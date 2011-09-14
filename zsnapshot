@@ -12,9 +12,9 @@ date=$(date +%Y%m%d-%H%M)
 
 echo Snapshot will be labelled $date
 
-# Now we start ZFS using Upstart.
+# First mount our ZFS filesystems
 
-/sbin/start zfs
+zfs mount -a
 
 sleep 5
 
@@ -65,10 +65,8 @@ for i in Subversion; do
 
 done
 
-# Now shutdown ZFS after a quick pause
+# Now unmount our ZFS filesystems
 
-sync
-sleep 1
-/sbin/stop zfs
+zfs umount -a
 
 # All done!
